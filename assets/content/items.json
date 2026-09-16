@@ -1,0 +1,74 @@
+[
+  {
+    "id": "food_bowl",
+    "name": "Миска с едой",
+    "price": 20,
+    "kind": "mandatory",
+    "effectHint": "Питомец станет сытее.",
+    "hungerDelta": 25,
+    "moodDelta": 5
+  },
+  {
+    "id": "water",
+    "name": "Свежая вода",
+    "price": 10,
+    "kind": "mandatory",
+    "effectHint": "Важный уход каждый период.",
+    "hungerDelta": 8,
+    "moodDelta": 4
+  },
+  {
+    "id": "grooming",
+    "name": "Расчёска",
+    "price": 15,
+    "kind": "mandatory",
+    "effectHint": "Уход поддерживает настроение.",
+    "hungerDelta": 0,
+    "moodDelta": 10
+  },
+  {
+    "id": "vet_check",
+    "name": "Осмотр у врача",
+    "price": 30,
+    "kind": "mandatory",
+    "effectHint": "Непредвиденный, но нужный расход.",
+    "hungerDelta": 5,
+    "moodDelta": 8
+  },
+  {
+    "id": "toy_ball",
+    "name": "Мячик",
+    "price": 18,
+    "kind": "optional",
+    "effectHint": "Игрушка поднимает настроение.",
+    "hungerDelta": -2,
+    "moodDelta": 15
+  },
+  {
+    "id": "hat",
+    "name": "Шапочка",
+    "price": 25,
+    "kind": "optional",
+    "effectHint": "Красиво, но можно подождать.",
+    "hungerDelta": 0,
+    "moodDelta": 12
+  },
+  {
+    "id": "snack",
+    "name": "Вкусняшка",
+    "price": 12,
+    "kind": "optional",
+    "effectHint": "Приятно, но не обязательно.",
+    "hungerDelta": 10,
+    "moodDelta": 8
+  },
+  {
+    "id": "poster",
+    "name": "Плакат",
+    "price": 22,
+    "kind": "optional",
+    "effectHint": "Украшение комнаты питомца.",
+    "hungerDelta": 0,
+    "moodDelta": 10
+  }
+]
