@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/economy.dart';
 import '../../domain/models.dart';
 import '../../state/game_controller.dart';
 import '../../theme/app_theme.dart';
@@ -43,7 +44,8 @@ class _AdultGateScreenState extends State<AdultGateScreen> {
             SliverAppBar(
               pinned: true,
               title: const Text('Раздел для взрослого'),
-              backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+              backgroundColor: FinnyColors.bg.withValues(alpha: 0.78),
+              surfaceTintColor: Colors.transparent,
             ),
             SliverPadding(
               padding: const EdgeInsets.all(24),
@@ -75,7 +77,7 @@ class _AdultGateScreenState extends State<AdultGateScreen> {
                           labelText: 'Ответ',
                           errorText: error,
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Color(0x14FFFFFF),
                         ),
                         style: const TextStyle(fontSize: 18),
                       ),
@@ -120,7 +122,8 @@ class AdultPanelScreen extends ConsumerWidget {
             SliverAppBar(
               pinned: true,
               title: const Text('Прогресс и настройки'),
-              backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+              backgroundColor: FinnyColors.bg.withValues(alpha: 0.78),
+              surfaceTintColor: Colors.transparent,
             ),
             SliverPadding(
               padding: const EdgeInsets.all(20),
@@ -162,7 +165,7 @@ class AdultPanelScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Уровень обучения ребёнка',
+                            'Сложность (попроще / посложнее)',
                             style: TextStyle(fontWeight: FontWeight.w800),
                           ),
                           const SizedBox(height: 8),
@@ -171,7 +174,9 @@ class AdultPanelScreen extends ConsumerWidget {
                               contentPadding: EdgeInsets.zero,
                               value: track,
                               groupValue: profile.ageTrack,
-                              title: Text('${track.label} · ${track.shortLabel}'),
+                              title: Text(
+                                '${track.difficultyLabel} · ${track.label}',
+                              ),
                               subtitle: Text(track.description),
                               onChanged: (v) {
                                 if (v != null) {
@@ -185,11 +190,89 @@ class AdultPanelScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    SoftCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Мотивация от родителя',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Выдано ${profile.parentGrantTotal}/${GameEconomy.parentGrantCap} монет. '
+                            'Опционально — можно не использовать.',
+                          ),
+                          const SizedBox(height: 10),
+                          FilledButton.tonal(
+                            onPressed: () async {
+                              final result = await ref
+                                  .read(gameControllerProvider.notifier)
+                                  .grantParentCoins();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(result.message)),
+                                );
+                              }
+                            },
+                            child: Text(
+                              'Начислить +${GameEconomy.parentGrantAmount} монет',
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Челлендж недели',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            profile.parentChallengeTarget == null
+                                ? 'Задай цель: сколько монет ребёнок отложит в копилку.'
+                                : 'Активно: ${profile.parentChallengeSaved}/${profile.parentChallengeTarget}. '
+                                    'Ребёнок видит это как миссию с питомцем.',
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final amount in [20, 40, 60])
+                                FilledButton.tonal(
+                                  onPressed: () async {
+                                    final result = await ref
+                                        .read(gameControllerProvider.notifier)
+                                        .setParentChallenge(amount);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(result.message),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Text('Цель $amount'),
+                                ),
+                              if (profile.parentChallengeTarget != null)
+                                TextButton(
+                                  onPressed: () async {
+                                    await ref
+                                        .read(gameControllerProvider.notifier)
+                                        .clearParentChallenge();
+                                  },
+                                  child: const Text('Снять челлендж'),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Демо-режим'),
                       subtitle: const Text(
-                        'Периоды идут подряд без ожидания календарных сроков.',
+                        'Периоды идут подряд без ожидания. Выключите — пауза ~1 час между периодами.',
                       ),
                       value: profile.demoMode,
                       onChanged: (v) => ref

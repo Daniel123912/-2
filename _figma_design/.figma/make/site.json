@@ -1,0 +1,10 @@
+{
+  "description": "Interactive mobile game teaching kids aged 7–11 essential financial skills through engaging animations and fun challenges to boost learning.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

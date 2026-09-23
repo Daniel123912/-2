@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models.dart';
@@ -47,7 +47,8 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                 SliverAppBar(
                   pinned: true,
                   title: const Text('Создай питомца'),
-                  backgroundColor: FinnyColors.cream.withValues(alpha: 0.9),
+                  backgroundColor: FinnyColors.bg.withValues(alpha: 0.78),
+                  surfaceTintColor: Colors.transparent,
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
@@ -66,12 +67,12 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Уровень обучения',
+                              'Сложность',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 4),
                             const Text(
-                              'Задания подстроятся под возраст: лёгкие, средние или сложные.',
+                              'Выбери «попроще» или «посложнее» — без вопроса о возрасте. Задания подстроятся.',
                             ),
                             const SizedBox(height: 12),
                             ...AgeTrack.values.map((track) {
@@ -80,8 +81,8 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: Material(
                                   color: selected
-                                      ? FinnyColors.sky
-                                      : FinnyColors.cream,
+                                      ? FinnyColors.purpleLight.withValues(alpha: 0.35)
+                                      : Colors.white.withValues(alpha: 0.06),
                                   borderRadius: BorderRadius.circular(16),
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(16),
@@ -94,8 +95,8 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
                                           color: selected
-                                              ? FinnyColors.forest
-                                              : FinnyColors.leaf,
+                                              ? FinnyColors.purpleBright
+                                              : FinnyColors.line,
                                           width: selected ? 2 : 1,
                                         ),
                                       ),
@@ -106,7 +107,7 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                                           Row(
                                             children: [
                                               Text(
-                                                track.label,
+                                                track.difficultyLabel,
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.w800,
                                                   fontSize: 16,
@@ -127,6 +128,14 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(track.description),
+                                          Text(
+                                            track.label,
+                                            style: TextStyle(
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.45),
+                                              fontSize: 12,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -143,7 +152,7 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                         decoration: InputDecoration(
                           labelText: 'Твоё игровое имя',
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Color(0x14FFFFFF),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -155,7 +164,7 @@ class _CreatePetScreenState extends ConsumerState<CreatePetScreen> {
                         decoration: InputDecoration(
                           labelText: 'Имя питомца',
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Color(0x14FFFFFF),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),

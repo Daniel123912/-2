@@ -51,9 +51,21 @@ class GameController extends AsyncNotifier<PlayerProfile?> {
   Future<void> setAgeTrack(AgeTrack track) async {
     final profile = state.value;
     if (profile == null) return;
+    // Сбрасываем набор квестов периода: иначе останутся id другой сложности.
+    final clearedPeriod = profile.period.phase == PeriodPhase.planning
+        ? profile.period.copyWith(activeQuestIds: const [])
+        : profile.period.copyWith(
+            activeQuestIds: const [],
+            completedQuestIds: const [],
+            goodQuestStreak: 0,
+            failXpQuestIds: const [],
+          );
     await _persist(profile.copyWith(
       ageTrack: track,
-      lastFeedback: 'Уровень обучения: ${track.label}. Задания обновлены.',
+      selectedGoalId: null,
+      period: clearedPeriod,
+      lastFeedback:
+          'Уровень: ${track.difficultyLabel}. Цели и задания обновлены.',
     ));
   }
 
@@ -132,11 +144,21 @@ class GameController extends AsyncNotifier<PlayerProfile?> {
     return result;
   }
 
-  Future<String> finishPeriod() async {
+  Future<EconomyResult> completeLesson(
+    LearningLesson lesson,
+    QuestOption option,
+  ) async {
+    final profile = state.value!;
+    final result = GameEconomy.completeLesson(profile, lesson, option);
+    await _persist(result.profile);
+    return result;
+  }
+
+  Future<PeriodCloseResult> finishPeriod() async {
     final profile = state.value!;
     final result = GameEconomy.closePeriod(profile);
     await _persist(result.profile);
-    return result.feedback;
+    return result;
   }
 
   Future<void> nextPeriod() async {
@@ -144,9 +166,67 @@ class GameController extends AsyncNotifier<PlayerProfile?> {
     await _persist(GameEconomy.startNextPeriod(profile));
   }
 
+  Future<EconomyResult> claimDailyLogin() async {
+    final profile = state.value;
+    if (profile == null) {
+      return EconomyResult(
+        profile: PlayerProfile.fresh(
+          playerName: 'Игрок',
+          petName: 'Финни',
+          appearance: const PetAppearance(
+            body: 'круглый',
+            color: 'рыжий',
+            accessory: 'бантик',
+          ),
+        ),
+        ok: false,
+        message: 'Нет профиля',
+      );
+    }
+    final result = GameEconomy.claimDailyLogin(profile);
+    if (result.ok) await _persist(result.profile);
+    return result;
+  }
+
+  Future<EconomyResult> claimSecretOfDay() async {
+    final profile = state.value!;
+    final result = GameEconomy.claimSecretOfDay(profile);
+    if (result.ok) await _persist(result.profile);
+    return result;
+  }
+
+  Future<EconomyResult> setParentChallenge(int targetCoins) async {
+    final profile = state.value!;
+    final result = GameEconomy.setParentChallenge(profile, targetCoins);
+    if (result.ok) await _persist(result.profile);
+    return result;
+  }
+
+  Future<EconomyResult> clearParentChallenge() async {
+    final profile = state.value!;
+    final result = GameEconomy.clearParentChallenge(profile);
+    if (result.ok) await _persist(result.profile);
+    return result;
+  }
+
+  Future<EconomyResult> grantParentCoins([int? amount]) async {
+    final profile = state.value!;
+    final result = amount == null
+        ? GameEconomy.grantParentCoins(profile)
+        : GameEconomy.grantParentCoins(profile, amount: amount);
+    if (result.ok) await _persist(result.profile);
+    return result;
+  }
+
   Future<void> setDemoMode(bool enabled) async {
     final profile = state.value!;
-    await _persist(profile.copyWith(demoMode: enabled));
+    await _persist(profile.copyWith(
+      demoMode: enabled,
+      nextPeriodAvailableAt: enabled ? null : profile.nextPeriodAvailableAt,
+      lastFeedback: enabled
+          ? 'Демо-режим: периоды идут подряд без ожидания.'
+          : 'Обычный режим: между периодами пауза ~1 час. Прогресс не сбрасывается.',
+    ));
   }
 
   Future<void> resetProfile() async {

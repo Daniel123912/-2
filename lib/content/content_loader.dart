@@ -9,6 +9,7 @@ class GameContent {
     required this.items,
     required this.goals,
     required this.quests,
+    required this.lessons,
     required this.bodies,
     required this.colors,
     required this.accessories,
@@ -17,6 +18,7 @@ class GameContent {
   final List<ShopItem> items;
   final List<SavingsGoal> goals;
   final List<Quest> quests;
+  final List<LearningLesson> lessons;
   final List<String> bodies;
   final List<String> colors;
   final List<String> accessories;
@@ -33,6 +35,8 @@ class ContentLoader {
         await rootBundle.loadString('assets/content/goals.json');
     final questsRaw =
         await rootBundle.loadString('assets/content/quests.json');
+    final lessonsRaw =
+        await rootBundle.loadString('assets/content/lessons.json');
     final petsRaw = await rootBundle.loadString('assets/content/pets.json');
 
     final items = (jsonDecode(itemsRaw) as List)
@@ -44,12 +48,16 @@ class ContentLoader {
     final quests = (jsonDecode(questsRaw) as List)
         .map((e) => Quest.fromJson(e as Map<String, dynamic>))
         .toList();
+    final lessons = (jsonDecode(lessonsRaw) as List)
+        .map((e) => LearningLesson.fromJson(e as Map<String, dynamic>))
+        .toList();
     final pets = jsonDecode(petsRaw) as Map<String, dynamic>;
 
     return GameContent(
       items: items,
       goals: goals,
       quests: quests,
+      lessons: lessons,
       bodies: (pets['bodies'] as List).cast<String>(),
       colors: (pets['colors'] as List).cast<String>(),
       accessories: (pets['accessories'] as List).cast<String>(),

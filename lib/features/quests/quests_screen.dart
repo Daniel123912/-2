@@ -74,19 +74,20 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
                   if (!locked && periodQuests.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(99),
                       child: LinearProgressIndicator(
                         value: periodDone / periodQuests.length,
-                        minHeight: 10,
+                        minHeight: 8,
                         color: FinnyColors.coral,
                         backgroundColor:
-                            FinnyColors.coral.withValues(alpha: 0.15),
+                            FinnyColors.coral.withValues(alpha: 0.12),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
+                    runSpacing: 8,
                     children: [
                       FilterChip(
                         label: const Text('Задания периода'),
@@ -106,6 +107,7 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
+                      runSpacing: 8,
                       children: [
                         FilterChip(
                           label: const Text('Все темы'),
@@ -133,10 +135,12 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
                   SliverAppBar(
                     pinned: true,
                     title: const Text('Задания'),
-                    backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+                    backgroundColor:
+                        FinnyColors.bg.withValues(alpha: 0.78),
+                    surfaceTintColor: Colors.transparent,
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         header,
@@ -158,14 +162,16 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
                   SliverAppBar(
                     pinned: true,
                     title: const Text('Задания'),
-                    backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+                    backgroundColor:
+                        FinnyColors.bg.withValues(alpha: 0.78),
+                    surfaceTintColor: Colors.transparent,
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                     sliver: SliverToBoxAdapter(child: header),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -183,8 +189,8 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
                           );
                         },
                         childCount: (periodQuests.isEmpty
-                                ? available.take(3).length
-                                : periodQuests.length),
+                            ? available.take(3).length
+                            : periodQuests.length),
                       ),
                     ),
                   ),
@@ -199,12 +205,11 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
                   SliverAppBar(
                     pinned: true,
                     floating: true,
-                    backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+                    backgroundColor:
+                        FinnyColors.bg.withValues(alpha: 0.78),
+                    surfaceTintColor: Colors.transparent,
                     title: const Text('Задания'),
                     bottom: TabBar(
-                      labelColor: FinnyColors.forest,
-                      unselectedLabelColor: FinnyColors.mist,
-                      indicatorColor: FinnyColors.mint,
                       tabs: [
                         for (final d in allowed) Tab(text: d.label),
                       ],
@@ -214,7 +219,7 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
                 body: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       child: header,
                     ),
                     Expanded(
@@ -269,10 +274,8 @@ class _QuestTile extends StatelessWidget {
                 ),
               ),
       color: done
-          ? FinnyColors.sky.withValues(alpha: 0.55)
-          : (isPeriod
-              ? FinnyColors.sun.withValues(alpha: 0.18)
-              : Colors.white),
+          ? FinnyColors.mint.withValues(alpha: 0.14)
+          : null,
       child: Row(
         children: [
           Container(
@@ -280,8 +283,8 @@ class _QuestTile extends StatelessWidget {
             height: 46,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: (done ? FinnyColors.mint : FinnyColors.sun)
-                  .withValues(alpha: 0.2),
+              color: (done ? FinnyColors.mint : FinnyColors.coral)
+                  .withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
@@ -297,16 +300,17 @@ class _QuestTile extends StatelessWidget {
                 Text(
                   quest.title,
                   style: const TextStyle(
-                    fontSize: 17,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${themeLabel(quest.theme)}'
-                  '${isPeriod ? ' · период' : ''}'
-                  '${done ? ' · выполнено' : ' · ★${quest.difficulty.starReward}'}',
-                  style: TextStyle(color: FinnyColors.mist),
+                  '${isPeriod ? ' · период' : ' · практика'}'
+                  '${done ? ' · выполнено' : (isPeriod ? ' · ★${quest.difficulty.starReward}' : ' · без монет')}',
+                  style: TextStyle(color: FinnyColors.mist, fontSize: 13),
                 ),
               ],
             ),
@@ -335,13 +339,15 @@ class _QuestList extends StatelessWidget {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text('На этом уровне пока нет заданий с выбранным фильтром.'),
+          child: Text(
+            'На этом уровне пока нет заданий с выбранным фильтром.',
+          ),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       itemCount: quests.length,
       itemBuilder: (context, index) {
         return Padding(
@@ -380,7 +386,8 @@ class QuestDetailScreen extends ConsumerWidget {
             SliverAppBar(
               pinned: true,
               title: Text(quest.title),
-              backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+              backgroundColor: FinnyColors.bg.withValues(alpha: 0.78),
+              surfaceTintColor: Colors.transparent,
             ),
             SliverPadding(
               padding: const EdgeInsets.all(20),
@@ -409,16 +416,18 @@ class QuestDetailScreen extends ConsumerWidget {
                           const SizedBox(height: 12),
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: FinnyColors.sky,
-                              borderRadius: BorderRadius.circular(14),
+                              color: FinnyColors.sheet,
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.lightbulb_outline,
-                                    color: FinnyColors.forest),
+                                const Icon(
+                                  Icons.lightbulb_outline_rounded,
+                                  color: FinnyColors.sun,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -483,8 +492,10 @@ class QuestDetailScreen extends ConsumerWidget {
                                   ),
                                 ),
                               ),
-                              const Icon(Icons.arrow_forward_rounded,
-                                  color: FinnyColors.forest),
+                              const Icon(
+                                Icons.arrow_forward_rounded,
+                                color: FinnyColors.ink,
+                              ),
                             ],
                           ),
                         ),

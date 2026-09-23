@@ -6,7 +6,8 @@
     "kind": "mandatory",
     "effectHint": "Питомец станет сытее.",
     "hungerDelta": 25,
-    "moodDelta": 5
+    "moodDelta": 5,
+    "emoji": "🍽️"
   },
   {
     "id": "water",
@@ -15,7 +16,8 @@
     "kind": "mandatory",
     "effectHint": "Важный уход каждый период.",
     "hungerDelta": 8,
-    "moodDelta": 4
+    "moodDelta": 4,
+    "emoji": "💧"
   },
   {
     "id": "grooming",
@@ -24,7 +26,8 @@
     "kind": "mandatory",
     "effectHint": "Уход поддерживает настроение.",
     "hungerDelta": 0,
-    "moodDelta": 10
+    "moodDelta": 10,
+    "emoji": "🪥"
   },
   {
     "id": "vet_check",
@@ -33,7 +36,8 @@
     "kind": "mandatory",
     "effectHint": "Непредвиденный, но нужный расход.",
     "hungerDelta": 5,
-    "moodDelta": 8
+    "moodDelta": 8,
+    "emoji": "🩺"
   },
   {
     "id": "toy_ball",
@@ -42,7 +46,8 @@
     "kind": "optional",
     "effectHint": "Игрушка поднимает настроение.",
     "hungerDelta": -2,
-    "moodDelta": 15
+    "moodDelta": 15,
+    "emoji": "⚽"
   },
   {
     "id": "hat",
@@ -51,7 +56,8 @@
     "kind": "optional",
     "effectHint": "Красиво, но можно подождать.",
     "hungerDelta": 0,
-    "moodDelta": 12
+    "moodDelta": 12,
+    "emoji": "🎩"
   },
   {
     "id": "snack",
@@ -60,7 +66,8 @@
     "kind": "optional",
     "effectHint": "Приятно, но не обязательно.",
     "hungerDelta": 10,
-    "moodDelta": 8
+    "moodDelta": 8,
+    "emoji": "🍪"
   },
   {
     "id": "poster",
@@ -69,6 +76,27 @@
     "kind": "optional",
     "effectHint": "Украшение комнаты питомца.",
     "hungerDelta": 0,
-    "moodDelta": 10
+    "moodDelta": 10,
+    "emoji": "🖼️"
+  },
+  {
+    "id": "gift_friend",
+    "name": "Подарок другу",
+    "price": 15,
+    "kind": "gift",
+    "effectHint": "Поделиться — тоже финансовое решение.",
+    "hungerDelta": 0,
+    "moodDelta": 14,
+    "emoji": "🎀"
+  },
+  {
+    "id": "gift_charity",
+    "name": "Доброе дело",
+    "price": 10,
+    "kind": "gift",
+    "effectHint": "Небольшая сумма на радость другим.",
+    "hungerDelta": 0,
+    "moodDelta": 12,
+    "emoji": "💝"
   }
 ]

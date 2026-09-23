@@ -18,6 +18,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   double? mandatory;
   double? optional;
   double? savings;
+  double? gift;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +37,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         (profile.period.plan.total > 0
             ? profile.period.plan.savings.toDouble()
             : suggested.savings.toDouble());
-    final total = m.round() + o.round() + s.round();
+    final g = gift ??
+        (profile.period.plan.total > 0
+            ? profile.period.plan.gift.toDouble()
+            : suggested.gift.toDouble());
+    final total = m.round() + o.round() + s.round() + g.round();
     final left = profile.balance - total;
     final locked = profile.period.phase != PeriodPhase.planning;
 
@@ -47,7 +52,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             SliverAppBar(
               pinned: true,
               title: const Text('План бюджета'),
-              backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+              backgroundColor: FinnyColors.bg.withValues(alpha: 0.78),
+              surfaceTintColor: Colors.transparent,
             ),
             SliverPadding(
               padding: const EdgeInsets.all(20),
@@ -65,7 +71,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         Text(
                           locked
                               ? 'План уже подтверждён. Сравни его с покупками в итоге периода.'
-                              : 'Распредели деньги до начала периода: нужное, желаемое, копилка. После подтверждения откроются задания.',
+                              : 'Три обязательные корзины + «Подарить». После подтверждения откроются задания.',
                         ),
                       ],
                     ),
@@ -79,6 +85,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                           mandatory = plan.mandatory.toDouble();
                           optional = plan.optional.toDouble();
                           savings = plan.savings.toDouble();
+                          gift = plan.gift.toDouble();
                         });
                       },
                       icon: const Icon(Icons.auto_awesome),
@@ -113,6 +120,14 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                           enabled: !locked,
                           onChanged: (v) => setState(() => savings = v),
                         ),
+                        _SliderBlock(
+                          label: 'Подарить',
+                          value: g.clamp(0.0, max).toDouble(),
+                          max: max,
+                          color: FinnyColors.pink,
+                          enabled: !locked,
+                          onChanged: (v) => setState(() => gift = v),
+                        ),
                       ],
                     ),
                   ),
@@ -140,6 +155,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                           mandatory: m.round(),
                           optional: o.round(),
                           savings: s.round(),
+                          gift: g.round(),
                         );
                         final result = await ref
                             .read(gameControllerProvider.notifier)
@@ -158,11 +174,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'План: обяз. ${profile.period.plan.mandatory}, жел. ${profile.period.plan.optional}, копилка ${profile.period.plan.savings}',
+                            'План: обяз. ${profile.period.plan.mandatory}, жел. ${profile.period.plan.optional}, копилка ${profile.period.plan.savings}, подарок ${profile.period.plan.gift}',
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Факт: обяз. ${profile.period.fact.mandatorySpent}, жел. ${profile.period.fact.optionalSpent}, копилка ${profile.period.fact.saved}',
+                            'Факт: обяз. ${profile.period.fact.mandatorySpent}, жел. ${profile.period.fact.optionalSpent}, копилка ${profile.period.fact.saved}, подарок ${profile.period.fact.giftSpent}',
                           ),
                           if (profile.period.activeQuestIds.isNotEmpty) ...[
                             const SizedBox(height: 8),

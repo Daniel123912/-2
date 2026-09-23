@@ -1,4 +1,4 @@
-enum ExpenseKind { mandatory, optional }
+enum ExpenseKind { mandatory, optional, gift }
 
 enum QuestTheme { budget, savings, purchases }
 
@@ -18,6 +18,13 @@ extension AgeTrackX on AgeTrack {
         AgeTrack.junior => '7–8 лет',
         AgeTrack.middle => '9–10 лет',
         AgeTrack.senior => '11 лет',
+      };
+
+  /// Формулировка «попроще / посложнее» без акцента на возраст (Q&A).
+  String get difficultyLabel => switch (this) {
+        AgeTrack.junior => 'Попроще',
+        AgeTrack.middle => 'Средне',
+        AgeTrack.senior => 'Посложнее',
       };
 
   String get shortLabel => switch (this) {
@@ -49,6 +56,12 @@ extension AgeTrackX on AgeTrack {
         AgeTrack.senior => 120,
       };
 }
+
+AgeTrack parseAgeTrack(String raw) => switch (raw) {
+      'middle' => AgeTrack.middle,
+      'senior' => AgeTrack.senior,
+      _ => AgeTrack.junior,
+    };
 
 extension QuestDifficultyX on QuestDifficulty {
   String get label => switch (this) {
@@ -132,6 +145,7 @@ class ShopItem {
     required this.effectHint,
     required this.hungerDelta,
     required this.moodDelta,
+    this.emoji = '',
   });
 
   final String id;
@@ -141,21 +155,34 @@ class ShopItem {
   final String effectHint;
   final int hungerDelta;
   final int moodDelta;
+  /// Эмодзи для витрины и отображения на питомце.
+  final String emoji;
 
   factory ShopItem.fromJson(Map<String, dynamic> json) {
     return ShopItem(
       id: json['id'] as String,
       name: json['name'] as String,
       price: json['price'] as int,
-      kind: (json['kind'] as String) == 'mandatory'
-          ? ExpenseKind.mandatory
-          : ExpenseKind.optional,
+      kind: parseExpenseKind(json['kind'] as String?),
       effectHint: json['effectHint'] as String,
       hungerDelta: json['hungerDelta'] as int? ?? 0,
       moodDelta: json['moodDelta'] as int? ?? 0,
+      emoji: json['emoji'] as String? ?? '',
     );
   }
 }
+
+ExpenseKind parseExpenseKind(String? raw) => switch (raw) {
+      'mandatory' => ExpenseKind.mandatory,
+      'gift' => ExpenseKind.gift,
+      _ => ExpenseKind.optional,
+    };
+
+String expenseKindToJson(ExpenseKind kind) => switch (kind) {
+      ExpenseKind.mandatory => 'mandatory',
+      ExpenseKind.gift => 'gift',
+      ExpenseKind.optional => 'optional',
+    };
 
 class SavingsGoal {
   const SavingsGoal({
@@ -163,21 +190,176 @@ class SavingsGoal {
     required this.name,
     required this.cost,
     required this.description,
+    this.ageTracks = const {
+      AgeTrack.junior,
+      AgeTrack.middle,
+      AgeTrack.senior,
+    },
   });
 
   final String id;
   final String name;
   final int cost;
   final String description;
+  final Set<AgeTrack> ageTracks;
+
+  bool availableFor(AgeTrack track) => ageTracks.contains(track);
 
   factory SavingsGoal.fromJson(Map<String, dynamic> json) {
+    final tracksRaw = (json['ageTracks'] as List?)?.cast<String>();
+    final ageTracks = tracksRaw == null
+        ? {AgeTrack.junior, AgeTrack.middle, AgeTrack.senior}
+        : tracksRaw.map(parseAgeTrack).toSet();
     return SavingsGoal(
       id: json['id'] as String,
       name: json['name'] as String,
       cost: json['cost'] as int,
       description: json['description'] as String,
+      ageTracks: ageTracks,
     );
   }
+}
+
+/// Короткий шаг урока в блоке «Учёба».
+class LessonStep {
+  const LessonStep({
+    required this.title,
+    required this.text,
+    this.icon = 'lightbulb',
+  });
+
+  final String title;
+  final String text;
+  final String icon;
+
+  factory LessonStep.fromJson(Map<String, dynamic> json) {
+    return LessonStep(
+      title: json['title'] as String,
+      text: json['text'] as String,
+      icon: json['icon'] as String? ?? 'lightbulb',
+    );
+  }
+}
+
+/// Мини-проверка в конце урока.
+class LessonQuiz {
+  const LessonQuiz({
+    required this.prompt,
+    required this.options,
+  });
+
+  final String prompt;
+  final List<QuestOption> options;
+
+  factory LessonQuiz.fromJson(Map<String, dynamic> json) {
+    return LessonQuiz(
+      prompt: json['prompt'] as String,
+      options: (json['options'] as List)
+          .map((e) => QuestOption.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+/// Возрастной урок: история + шаги + проверка.
+class LearningLesson {
+  const LearningLesson({
+    required this.id,
+    required this.title,
+    required this.hook,
+    required this.story,
+    required this.theme,
+    required this.steps,
+    required this.quiz,
+    this.funFact = '',
+    this.rewardXp = 8,
+    this.rewardCoins = 3,
+    this.ageTracks = const {
+      AgeTrack.junior,
+      AgeTrack.middle,
+      AgeTrack.senior,
+    },
+  });
+
+  final String id;
+  final String title;
+  /// Короткая «зацепка» для ребёнка.
+  final String hook;
+  final String story;
+  final QuestTheme theme;
+  final List<LessonStep> steps;
+  final LessonQuiz quiz;
+  final String funFact;
+  final int rewardXp;
+  final int rewardCoins;
+  final Set<AgeTrack> ageTracks;
+
+  bool availableFor(AgeTrack track) => ageTracks.contains(track);
+
+  factory LearningLesson.fromJson(Map<String, dynamic> json) {
+    final themeRaw = json['theme'] as String? ?? 'budget';
+    final theme = switch (themeRaw) {
+      'savings' => QuestTheme.savings,
+      'purchases' => QuestTheme.purchases,
+      _ => QuestTheme.budget,
+    };
+    final tracksRaw = (json['ageTracks'] as List?)?.cast<String>();
+    final ageTracks = tracksRaw == null
+        ? {AgeTrack.junior, AgeTrack.middle, AgeTrack.senior}
+        : tracksRaw.map(parseAgeTrack).toSet();
+    return LearningLesson(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      hook: json['hook'] as String? ?? '',
+      story: json['story'] as String? ?? '',
+      theme: theme,
+      steps: (json['steps'] as List? ?? [])
+          .map((e) => LessonStep.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      quiz: LessonQuiz.fromJson(json['quiz'] as Map<String, dynamic>),
+      funFact: json['funFact'] as String? ?? '',
+      rewardXp: json['rewardXp'] as int? ?? 8,
+      rewardCoins: json['rewardCoins'] as int? ?? 3,
+      ageTracks: ageTracks,
+    );
+  }
+}
+
+/// Тексты «лица» блока учёбы под возраст.
+class AgeLearnGuide {
+  const AgeLearnGuide({
+    required this.headline,
+    required this.blurb,
+    required this.petLine,
+    required this.badge,
+  });
+
+  final String headline;
+  final String blurb;
+  final String petLine;
+  final String badge;
+
+  static AgeLearnGuide forTrack(AgeTrack track) => switch (track) {
+        AgeTrack.junior => const AgeLearnGuide(
+          headline: 'Школа Финни',
+          blurb:
+              'Короткие игры-истории: нужное и желаемое, копилка понемногу и «хватает ли монет».',
+          petLine: 'Поиграй со мной — вместе учимся тратить и копить!',
+          badge: 'Играй и учись · 7–8 лет',
+        ),
+        AgeTrack.middle => const AgeLearnGuide(
+          headline: 'Мастерская плана',
+          blurb: 'Учимся делить деньги, копить и сравнивать цены.',
+          petLine: 'С планом я сыт и ближе к цели. Проверим?',
+          badge: 'Для 9–10 лет',
+        ),
+        AgeTrack.senior => const AgeLearnGuide(
+          headline: 'Штаб решений',
+          blurb: 'Приоритеты, сюрпризы и контроль план vs факт.',
+          petLine: 'Готов к сложным выборам? Покажи, как думаешь.',
+          badge: 'Для 11 лет',
+        ),
+      };
 }
 
 class QuestOption {
@@ -249,7 +431,7 @@ class Quest {
     final tracksRaw = (json['ageTracks'] as List?)?.cast<String>();
     final ageTracks = tracksRaw == null
         ? {AgeTrack.junior, AgeTrack.middle, AgeTrack.senior}
-        : tracksRaw.map(_parseAgeTrack).toSet();
+        : tracksRaw.map(parseAgeTrack).toSet();
 
     return Quest(
       id: json['id'] as String,
@@ -264,12 +446,6 @@ class Quest {
           .toList(),
     );
   }
-
-  static AgeTrack _parseAgeTrack(String raw) => switch (raw) {
-        'middle' => AgeTrack.middle,
-        'senior' => AgeTrack.senior,
-        _ => AgeTrack.junior,
-      };
 }
 
 class PetAppearance {
@@ -305,19 +481,28 @@ class BudgetPlan {
     required this.mandatory,
     required this.optional,
     required this.savings,
+    this.gift = 0,
   });
 
   final int mandatory;
   final int optional;
   final int savings;
+  /// Четвёртая опциональная корзина «Подарить» / на радость.
+  final int gift;
 
-  int get total => mandatory + optional + savings;
+  int get total => mandatory + optional + savings + gift;
 
-  BudgetPlan copyWith({int? mandatory, int? optional, int? savings}) {
+  BudgetPlan copyWith({
+    int? mandatory,
+    int? optional,
+    int? savings,
+    int? gift,
+  }) {
     return BudgetPlan(
       mandatory: mandatory ?? this.mandatory,
       optional: optional ?? this.optional,
       savings: savings ?? this.savings,
+      gift: gift ?? this.gift,
     );
   }
 
@@ -325,6 +510,7 @@ class BudgetPlan {
         'mandatory': mandatory,
         'optional': optional,
         'savings': savings,
+        'gift': gift,
       };
 
   factory BudgetPlan.fromJson(Map<String, dynamic> json) {
@@ -332,10 +518,12 @@ class BudgetPlan {
       mandatory: json['mandatory'] as int,
       optional: json['optional'] as int,
       savings: json['savings'] as int,
+      gift: json['gift'] as int? ?? 0,
     );
   }
 
-  static const empty = BudgetPlan(mandatory: 0, optional: 0, savings: 0);
+  static const empty =
+      BudgetPlan(mandatory: 0, optional: 0, savings: 0, gift: 0);
 }
 
 class BudgetFact {
@@ -343,21 +531,27 @@ class BudgetFact {
     this.mandatorySpent = 0,
     this.optionalSpent = 0,
     this.saved = 0,
+    this.giftSpent = 0,
   });
 
   final int mandatorySpent;
   final int optionalSpent;
   final int saved;
+  final int giftSpent;
+
+  int get spentTotal => mandatorySpent + optionalSpent + saved + giftSpent;
 
   BudgetFact copyWith({
     int? mandatorySpent,
     int? optionalSpent,
     int? saved,
+    int? giftSpent,
   }) {
     return BudgetFact(
       mandatorySpent: mandatorySpent ?? this.mandatorySpent,
       optionalSpent: optionalSpent ?? this.optionalSpent,
       saved: saved ?? this.saved,
+      giftSpent: giftSpent ?? this.giftSpent,
     );
   }
 
@@ -365,6 +559,7 @@ class BudgetFact {
         'mandatorySpent': mandatorySpent,
         'optionalSpent': optionalSpent,
         'saved': saved,
+        'giftSpent': giftSpent,
       };
 
   factory BudgetFact.fromJson(Map<String, dynamic> json) {
@@ -372,6 +567,7 @@ class BudgetFact {
       mandatorySpent: json['mandatorySpent'] as int? ?? 0,
       optionalSpent: json['optionalSpent'] as int? ?? 0,
       saved: json['saved'] as int? ?? 0,
+      giftSpent: json['giftSpent'] as int? ?? 0,
     );
   }
 }
@@ -393,7 +589,7 @@ class PurchaseRecord {
         'itemId': itemId,
         'name': name,
         'price': price,
-        'kind': kind == ExpenseKind.mandatory ? 'mandatory' : 'optional',
+        'kind': expenseKindToJson(kind),
       };
 
   factory PurchaseRecord.fromJson(Map<String, dynamic> json) {
@@ -401,9 +597,7 @@ class PurchaseRecord {
       itemId: json['itemId'] as String,
       name: json['name'] as String,
       price: json['price'] as int,
-      kind: (json['kind'] as String) == 'mandatory'
-          ? ExpenseKind.mandatory
-          : ExpenseKind.optional,
+      kind: parseExpenseKind(json['kind'] as String?),
     );
   }
 }
@@ -420,6 +614,7 @@ class GamePeriod {
     this.completedQuestIds = const [],
     this.feedback = '',
     this.goodQuestStreak = 0,
+    this.failXpQuestIds = const [],
   });
 
   final int index;
@@ -433,6 +628,8 @@ class GamePeriod {
   final List<String> completedQuestIds;
   final String feedback;
   final int goodQuestStreak;
+  /// Квесты, за ошибку в которых уже начислен учебный XP в этом периоде.
+  final List<String> failXpQuestIds;
 
   int get periodQuestsDone =>
       completedQuestIds.where(activeQuestIds.contains).length;
@@ -452,6 +649,7 @@ class GamePeriod {
     List<String>? completedQuestIds,
     String? feedback,
     int? goodQuestStreak,
+    List<String>? failXpQuestIds,
   }) {
     return GamePeriod(
       index: index ?? this.index,
@@ -464,6 +662,7 @@ class GamePeriod {
       completedQuestIds: completedQuestIds ?? this.completedQuestIds,
       feedback: feedback ?? this.feedback,
       goodQuestStreak: goodQuestStreak ?? this.goodQuestStreak,
+      failXpQuestIds: failXpQuestIds ?? this.failXpQuestIds,
     );
   }
 
@@ -478,6 +677,7 @@ class GamePeriod {
         'completedQuestIds': completedQuestIds,
         'feedback': feedback,
         'goodQuestStreak': goodQuestStreak,
+        'failXpQuestIds': failXpQuestIds,
       };
 
   factory GamePeriod.fromJson(Map<String, dynamic> json) {
@@ -498,6 +698,7 @@ class GamePeriod {
           (json['completedQuestIds'] as List? ?? []).cast<String>(),
       feedback: json['feedback'] as String? ?? '',
       goodQuestStreak: json['goodQuestStreak'] as int? ?? 0,
+      failXpQuestIds: (json['failXpQuestIds'] as List? ?? []).cast<String>(),
     );
   }
 }
@@ -547,6 +748,15 @@ class PlayerProfile {
     this.skills = const SkillProgress(),
     this.stars = 0,
     this.comboBest = 0,
+    this.completedLessonIds = const [],
+    this.lastLoginBonusDay,
+    this.parentGrantTotal = 0,
+    this.nextPeriodAvailableAt,
+    this.ownedItemIds = const [],
+    this.secretClaimedDay,
+    this.parentChallengeTarget,
+    this.parentChallengeSaved = 0,
+    this.completedCollectionIds = const [],
   });
 
   final String playerName;
@@ -569,6 +779,23 @@ class PlayerProfile {
   final SkillProgress skills;
   final int stars;
   final int comboBest;
+  final List<String> completedLessonIds;
+  /// YYYY-MM-DD последнего бонуса за вход (пропуск дня не штрафует).
+  final String? lastLoginBonusDay;
+  /// Сколько монет родитель уже выдал за жизнь профиля.
+  final int parentGrantTotal;
+  /// ISO-время, когда можно начать следующий период (если не демо).
+  final String? nextPeriodAvailableAt;
+  /// Купленные товары (для коллекций и скинов на питомце).
+  final List<String> ownedItemIds;
+  /// YYYY-MM-DD, когда забрали секрет дня.
+  final String? secretClaimedDay;
+  /// Цель челленджа от родителя (монеты в копилку). null = нет челленджа.
+  final int? parentChallengeTarget;
+  /// Сколько уже отложено по текущему челленджу.
+  final int parentChallengeSaved;
+  /// Id полностью собранных коллекций (награда уже выдана).
+  final List<String> completedCollectionIds;
 
   PlayerProfile copyWith({
     String? playerName,
@@ -591,6 +818,15 @@ class PlayerProfile {
     SkillProgress? skills,
     int? stars,
     int? comboBest,
+    List<String>? completedLessonIds,
+    Object? lastLoginBonusDay = _sentinel,
+    int? parentGrantTotal,
+    Object? nextPeriodAvailableAt = _sentinel,
+    List<String>? ownedItemIds,
+    Object? secretClaimedDay = _sentinel,
+    Object? parentChallengeTarget = _sentinel,
+    int? parentChallengeSaved,
+    List<String>? completedCollectionIds,
   }) {
     return PlayerProfile(
       playerName: playerName ?? this.playerName,
@@ -616,6 +852,25 @@ class PlayerProfile {
       skills: skills ?? this.skills,
       stars: stars ?? this.stars,
       comboBest: comboBest ?? this.comboBest,
+      completedLessonIds: completedLessonIds ?? this.completedLessonIds,
+      lastLoginBonusDay: identical(lastLoginBonusDay, _sentinel)
+          ? this.lastLoginBonusDay
+          : lastLoginBonusDay as String?,
+      parentGrantTotal: parentGrantTotal ?? this.parentGrantTotal,
+      nextPeriodAvailableAt: identical(nextPeriodAvailableAt, _sentinel)
+          ? this.nextPeriodAvailableAt
+          : nextPeriodAvailableAt as String?,
+      ownedItemIds: ownedItemIds ?? this.ownedItemIds,
+      secretClaimedDay: identical(secretClaimedDay, _sentinel)
+          ? this.secretClaimedDay
+          : secretClaimedDay as String?,
+      parentChallengeTarget: identical(parentChallengeTarget, _sentinel)
+          ? this.parentChallengeTarget
+          : parentChallengeTarget as int?,
+      parentChallengeSaved:
+          parentChallengeSaved ?? this.parentChallengeSaved,
+      completedCollectionIds:
+          completedCollectionIds ?? this.completedCollectionIds,
     );
   }
 
@@ -640,6 +895,15 @@ class PlayerProfile {
         'skills': skills.toJson(),
         'stars': stars,
         'comboBest': comboBest,
+        'completedLessonIds': completedLessonIds,
+        'lastLoginBonusDay': lastLoginBonusDay,
+        'parentGrantTotal': parentGrantTotal,
+        'nextPeriodAvailableAt': nextPeriodAvailableAt,
+        'ownedItemIds': ownedItemIds,
+        'secretClaimedDay': secretClaimedDay,
+        'parentChallengeTarget': parentChallengeTarget,
+        'parentChallengeSaved': parentChallengeSaved,
+        'completedCollectionIds': completedCollectionIds,
       };
 
   factory PlayerProfile.fromJson(Map<String, dynamic> json) {
@@ -672,6 +936,17 @@ class PlayerProfile {
       skills: SkillProgress.fromJson(json['skills'] as Map<String, dynamic>?),
       stars: json['stars'] as int? ?? 0,
       comboBest: json['comboBest'] as int? ?? 0,
+      completedLessonIds:
+          (json['completedLessonIds'] as List? ?? []).cast<String>(),
+      lastLoginBonusDay: json['lastLoginBonusDay'] as String?,
+      parentGrantTotal: json['parentGrantTotal'] as int? ?? 0,
+      nextPeriodAvailableAt: json['nextPeriodAvailableAt'] as String?,
+      ownedItemIds: (json['ownedItemIds'] as List? ?? []).cast<String>(),
+      secretClaimedDay: json['secretClaimedDay'] as String?,
+      parentChallengeTarget: json['parentChallengeTarget'] as int?,
+      parentChallengeSaved: json['parentChallengeSaved'] as int? ?? 0,
+      completedCollectionIds:
+          (json['completedCollectionIds'] as List? ?? []).cast<String>(),
     );
   }
 
@@ -700,6 +975,15 @@ class PlayerProfile {
       skills: const SkillProgress(),
       stars: 0,
       comboBest: 0,
+      completedLessonIds: const [],
+      lastLoginBonusDay: null,
+      parentGrantTotal: 0,
+      nextPeriodAvailableAt: null,
+      ownedItemIds: const [],
+      secretClaimedDay: null,
+      parentChallengeTarget: null,
+      parentChallengeSaved: 0,
+      completedCollectionIds: const [],
       period: GamePeriod(
         index: 1,
         startingBalance: balance,
@@ -707,7 +991,7 @@ class PlayerProfile {
       ),
       completedQuestIds: const [],
       lastFeedback:
-          'Добро пожаловать! Трек: ${ageTrack.label}. Сначала составь план бюджета.',
+          'Добро пожаловать в «Неделю заботы»! Сложность: ${ageTrack.difficultyLabel}. Сначала составь план.',
     );
   }
 }
@@ -722,6 +1006,10 @@ class EconomyResult {
     this.earnedStars = 0,
     this.earnedXp = 0,
     this.combo = 0,
+    this.celebrate = false,
+    this.celebrateTitle,
+    this.stageGrew = false,
+    this.collectionCompleteId,
   });
 
   final PlayerProfile profile;
@@ -730,4 +1018,9 @@ class EconomyResult {
   final int earnedStars;
   final int earnedXp;
   final int combo;
+  final bool celebrate;
+  final String? celebrateTitle;
+  final bool stageGrew;
+  /// Id коллекции, которую только что собрали.
+  final String? collectionCompleteId;
 }

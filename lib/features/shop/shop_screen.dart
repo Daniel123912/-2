@@ -26,13 +26,16 @@ class ShopScreen extends ConsumerWidget {
                 data.items.where((e) => e.kind == ExpenseKind.mandatory);
             final optional =
                 data.items.where((e) => e.kind == ExpenseKind.optional);
+            final gifts =
+                data.items.where((e) => e.kind == ExpenseKind.gift);
 
             return CustomScrollView(
               slivers: [
                 SliverAppBar(
                   pinned: true,
                   title: const Text('Покупки'),
-                  backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+                  backgroundColor: FinnyColors.bg.withValues(alpha: 0.78),
+                  surfaceTintColor: Colors.transparent,
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.all(16),
@@ -49,7 +52,7 @@ class ShopScreen extends ConsumerWidget {
                             const SizedBox(height: 6),
                             Text(
                               profile.period.phase == PeriodPhase.playing
-                                  ? 'Сначала закрой нужное по плану, желаемое — по возможности.'
+                                  ? 'Сначала закрой нужное по плану, желаемое и подарок — по возможности.'
                                   : 'Покупки откроются после подтверждения плана.',
                             ),
                             if (plan.total > 0) ...[
@@ -67,6 +70,13 @@ class ShopScreen extends ConsumerWidget {
                                 fact: fact.optionalSpent,
                                 color: FinnyColors.purchases,
                               ),
+                              const SizedBox(height: 8),
+                              _PlanBar(
+                                label: 'Подарить',
+                                plan: plan.gift,
+                                fact: fact.giftSpent,
+                                color: FinnyColors.pink,
+                              ),
                             ],
                           ],
                         ),
@@ -81,6 +91,11 @@ class ShopScreen extends ConsumerWidget {
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       ...optional.map((item) => _ItemCard(item: item)),
+                      const SizedBox(height: 12),
+                      Text('Подарить',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      ...gifts.map((item) => _ItemCard(item: item)),
                     ]),
                   ),
                 ),
@@ -135,11 +150,16 @@ class _ItemCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final kindLabel =
-        item.kind == ExpenseKind.mandatory ? 'Обязательное' : 'Желаемое';
-    final accent = item.kind == ExpenseKind.mandatory
-        ? FinnyColors.budget
-        : FinnyColors.purchases;
+    final kindLabel = switch (item.kind) {
+      ExpenseKind.mandatory => 'Обязательное',
+      ExpenseKind.gift => 'Подарить',
+      ExpenseKind.optional => 'Желаемое',
+    };
+    final accent = switch (item.kind) {
+      ExpenseKind.mandatory => FinnyColors.budget,
+      ExpenseKind.gift => FinnyColors.pink,
+      ExpenseKind.optional => FinnyColors.purchases,
+    };
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -149,6 +169,11 @@ class _ItemCard extends ConsumerWidget {
           children: [
             Row(
               children: [
+                Text(
+                  item.emoji.isEmpty ? '🛒' : item.emoji,
+                  style: const TextStyle(fontSize: 22),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     item.name,
@@ -208,7 +233,15 @@ class _ItemCard extends ConsumerWidget {
                   if (confirm != true || !context.mounted) return;
                   final result =
                       await ref.read(gameControllerProvider.notifier).buy(item);
-                  if (context.mounted) {
+                  if (!context.mounted) return;
+                  if (result.celebrate) {
+                    await showCelebration(
+                      context,
+                      title: result.celebrateTitle ?? 'Коллекция!',
+                      message: result.message,
+                      stars: result.earnedStars,
+                    );
+                  } else {
                     await showFeedback(context, result.message, ok: result.ok);
                   }
                 },

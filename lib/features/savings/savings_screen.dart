@@ -22,8 +22,9 @@ class SavingsScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('$e')),
           data: (data) {
+            final goals = GameEconomy.goalsForProfile(profile, data.goals);
             SavingsGoal? goal;
-            for (final g in data.goals) {
+            for (final g in goals) {
               if (g.id == profile.selectedGoalId) {
                 goal = g;
                 break;
@@ -44,52 +45,102 @@ class SavingsScreen extends ConsumerWidget {
                 SliverAppBar(
                   pinned: true,
                   title: const Text('Накопления'),
-                  backgroundColor: FinnyColors.cream.withValues(alpha: 0.95),
+                  backgroundColor: FinnyColors.bg.withValues(alpha: 0.78),
+                  surfaceTintColor: Colors.transparent,
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.all(20),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       SoftCard(
+                        color: const Color(0xFFEC4899).withValues(alpha: 0.22),
+                        padding: const EdgeInsets.all(22),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'В копилке: ${profile.savingsBalance} монет',
-                              style: Theme.of(context).textTheme.titleMedium,
+                              'в копилке',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.55),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                letterSpacing: 0.6,
+                              ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${profile.savingsBalance}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 40,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1.2,
+                                height: 1,
+                              ),
+                            ),
+                            Text(
+                              'монет',
+                              style: TextStyle(
+                                color: FinnyColors.glow,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                             if (goal != null) ...[
-                              Text('Цель: ${goal.name} (${goal.cost})'),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Цель: ${goal.name} (${goal.cost})',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               Text(
                                 canClaim
                                     ? 'Хватает на цель — можно забрать!'
                                     : 'Осталось: $left',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 13,
+                                ),
                               ),
                               if (eta != null && !canClaim)
                                 Text(
                                   'При ~15 монетах за период: около $eta периодов',
-                                  style: TextStyle(color: FinnyColors.mist),
+                                  style: TextStyle(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.45),
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 14),
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(99),
                                 child: LinearProgressIndicator(
                                   value: (profile.savingsBalance / goal.cost)
                                       .clamp(0, 1),
-                                  minHeight: 14,
-                                  color: FinnyColors.savings,
+                                  minHeight: 8,
+                                  color: FinnyColors.glow,
                                   backgroundColor:
-                                      FinnyColors.savings.withValues(alpha: 0.15),
+                                      Colors.white.withValues(alpha: 0.12),
                                 ),
                               ),
                             ] else
-                              const Text('Выбери цель ниже.'),
-                            if (canPlay && profile.period.plan.savings > 0) ...[
-                              const SizedBox(height: 10),
+                              const Padding(
+                                padding: EdgeInsets.only(top: 12),
+                                child: Text(
+                                  'Выбери цель ниже.',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ),
+                            if (canPlay &&
+                                profile.period.plan.savings > 0) ...[
+                              const SizedBox(height: 12),
                               Text(
                                 'План периода: ${profile.period.fact.saved} / ${profile.period.plan.savings}',
-                                style: TextStyle(color: FinnyColors.mist),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ],
@@ -102,7 +153,15 @@ class SavingsScreen extends ConsumerWidget {
                             final result = await ref
                                 .read(gameControllerProvider.notifier)
                                 .claimGoal(goal!);
-                            if (context.mounted) {
+                            if (!context.mounted) return;
+                            if (result.celebrate) {
+                              await showCelebration(
+                                context,
+                                title: result.celebrateTitle ?? 'Цель взята!',
+                                message: result.message,
+                                stars: result.earnedStars,
+                              );
+                            } else {
                               await showFeedback(
                                 context,
                                 result.message,
@@ -111,15 +170,14 @@ class SavingsScreen extends ConsumerWidget {
                               );
                             }
                           },
-                          icon: const Icon(Icons.celebration),
+                          icon: const Icon(Icons.celebration_rounded),
                           label: Text('Забрать «${goal.name}»'),
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      Text('Цели',
-                          style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      ...data.goals.map(
+                      const SizedBox(height: 22),
+                      const SectionLabel('Цели'),
+                      const SizedBox(height: 10),
+                      ...goals.map(
                         (g) {
                           final selected = profile.selectedGoalId == g.id;
                           return Padding(
@@ -128,7 +186,9 @@ class SavingsScreen extends ConsumerWidget {
                               onTap: () => ref
                                   .read(gameControllerProvider.notifier)
                                   .selectGoal(g.id),
-                              color: selected ? FinnyColors.sky : Colors.white,
+                              color: selected
+                                  ? FinnyColors.purpleLight.withValues(alpha: 0.3)
+                                  : null,
                               child: Row(
                                 children: [
                                   Icon(
@@ -150,7 +210,13 @@ class SavingsScreen extends ConsumerWidget {
                                             fontSize: 16,
                                           ),
                                         ),
-                                        Text('${g.description} · ${g.cost} монет'),
+                                        Text(
+                                          '${g.description} · ${g.cost} монет',
+                                          style: TextStyle(
+                                            color: FinnyColors.mist,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -160,27 +226,46 @@ class SavingsScreen extends ConsumerWidget {
                           );
                         },
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Text(
                         canPlay
                             ? 'Пополнить копилку'
                             : 'Пополнение доступно после плана бюджета',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          for (final amount in [10, 15, 20, if (planLeft > 0 && planLeft != 10 && planLeft != 15 && planLeft != 20) planLeft])
+                          for (final amount in [
+                            10,
+                            15,
+                            20,
+                            if (planLeft > 0 &&
+                                planLeft != 10 &&
+                                planLeft != 15 &&
+                                planLeft != 20)
+                              planLeft,
+                          ])
                             FilledButton(
                               onPressed: !canPlay
                                   ? null
                                   : () async {
                                       final result = await ref
-                                          .read(gameControllerProvider.notifier)
+                                          .read(
+                                              gameControllerProvider.notifier)
                                           .saveToGoal(amount);
-                                      if (context.mounted) {
+                                      if (!context.mounted) return;
+                                      if (result.celebrate) {
+                                        await showCelebration(
+                                          context,
+                                          title: result.celebrateTitle ??
+                                              'Миссия!',
+                                          message: result.message,
+                                          stars: result.earnedStars,
+                                        );
+                                      } else {
                                         await showFeedback(
                                           context,
                                           result.message,
@@ -206,11 +291,13 @@ class SavingsScreen extends ConsumerWidget {
                               content: Text(warn.message),
                               actions: [
                                 TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
                                   child: const Text('Нет'),
                                 ),
                                 FilledButton(
-                                  onPressed: () => Navigator.pop(context, true),
+                                  onPressed: () =>
+                                      Navigator.pop(context, true),
                                   child: const Text('Да, снять'),
                                 ),
                               ],
@@ -221,8 +308,11 @@ class SavingsScreen extends ConsumerWidget {
                                 .read(gameControllerProvider.notifier)
                                 .withdraw(15, confirmed: true);
                             if (context.mounted) {
-                              await showFeedback(context, result.message,
-                                  ok: result.ok);
+                              await showFeedback(
+                                context,
+                                result.message,
+                                ok: result.ok,
+                              );
                             }
                           }
                         },
